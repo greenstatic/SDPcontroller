@@ -192,7 +192,7 @@ function startServer() {
 
 
     // Start a TLS Server
-    var server = tls.createServer(options, async function (socket) {
+    var server = tls.createServer(options, async (socket) => {
 
         if(config.debug)
           console.log("Socket connection started");
@@ -227,9 +227,10 @@ function startServer() {
         }
         else {
           try {
-            sdpId = await getSDPIdFromAltField(connection, clientCommonName);
+            sdpId = await getSDPIdFromAltField(clientCommonName);
           }
           catch(err) {
+            console.error(err);
             sdpId = null;
           }
         }
@@ -1967,36 +1968,54 @@ function checkDatabaseForUpdates(currentInterval) {
 
 }  // END FUNCTION checkDatabaseForUpdates
 
-function getSDPIdFromAltField(connection, alt_name) {
+function getSDPIdFromAltField(alt_name) {
   return new Promise((resolve, reject) => {
-    connection.query('SELECT sdpid FROM sdp.sdpid WHERE alt_name = ?', [alt_name], function(error, rows, fields) {
-      if (error) {
-        connection.release();
-        console.error("Resolving sdpid from alt_field query returned error: " + error);
-        return reject(error);
-      }
-
-      if (rows.length == 0) {
-        connection.release();
-        console.log("Could not resolve sdpid from alt_field.");
-        return reject(error);
-      }
-
-      if (rows.length > 1) {
-        console.log(`Warning, multiple alt_field matches for sdpid lookup (alt_name:${alt_name}), using first entry.`);
-      }
-
-      try {
-        return resolve(parseInt(rows[0]));
-      }
-      catch(err) {
-        // Failed to parseInt
-        console.error("Failed to parseInt while resolving sdpid from alt_field. Database result:", rows);
+    db.getConnection(function(err,connection){
+      if (err) {
         return reject(err);
       }
+
+      var databaseErrorCallback = function(err2) {
+          connection.removeListener('error', databaseErrorCallback);
+          connection.release();
+          console.error("Error from database connection: " + error);
+          return reject(err2);
+      };
+
+      connection.on('error', databaseErrorCallback);
+
+      connection.query('SELECT sdpid FROM sdp.sdpid WHERE alt_name = ?',[alt_name],
+        function (error, rows, fields) {
+          if (error) {
+            return reject(error);
+          }
+
+          if (rows.length == 0) {
+            connection.release();
+            console.log("Could not resolve sdpid from alt_field.");
+            return reject(error);
+          }
+
+          if (rows.length > 1) {
+            console.log(`Warning, multiple alt_field matches for sdpid lookup (alt_name:${alt_name}), using first entry.`);
+          }
+
+          try {
+            return resolve(parseInt(rows[0]['sdpid']));
+          }
+          catch(err) {
+            // Failed to parseInt
+            console.error("Failed to parseInt while resolving sdpid from alt_field. Database result:", rows);
+            return reject(err);
+          }
+        }
+      );
+
     });
 
-  })
+
+
+  });
 }
 
 
