@@ -220,10 +220,10 @@ function startServer() {
             nextConnectionId += 1;
 
         // Identify the connecting client or gateway
-        var sdpId;
         var clientCommonName = socket.getPeerCertificate().subject.CN;
-        if (!clientCommonName) {
-          sdpId = null;
+        var sdpId;
+        if (clientCommonName.split(".").length === 1 && !isNaN(parseInt(clientCommonName))) {
+          sdpId = parseInt(clientCommonName);
         }
         else {
           try {
@@ -306,6 +306,9 @@ function startServer() {
 
         socket.on('end', function () {
             console.log("Connection to SDP ID " + sdpId + ", connection ID " + connectionId + " closed.");
+            if (!memberDetails) {
+              return;
+            }
             if(memberDetails.type === 'gateway') {
                 removeOpenConnections(connectionId);
             }
