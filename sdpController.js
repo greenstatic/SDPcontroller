@@ -1981,7 +1981,7 @@ function getSDPIdFromAltField(alt_name) {
       var databaseErrorCallback = function(err2) {
           connection.removeListener('error', databaseErrorCallback);
           connection.release();
-          console.error("Error from database connection: " + error);
+          console.error("Error from database connection: " + err2);
           return reject(err2);
       };
 
