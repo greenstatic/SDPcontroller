@@ -1,18 +1,18 @@
-/* 
+/*
  *  Copyright 2016 Waverley Labs, LLC
- *  
+ *
  *  This file is part of SDPcontroller
- *  
+ *
  *  SDPcontroller is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  SDPcontroller is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
@@ -61,7 +61,7 @@ credentialMaker.prototype.init = function(callback) {
       {
           caKeyPassword = result.password;
           callback();
-      }    
+      }
     });
   }
 };
@@ -69,7 +69,7 @@ credentialMaker.prototype.init = function(callback) {
 
 // Get new credentials for member
 credentialMaker.prototype.getNewCredentials =	function(memberDetails, callback) {
-  var promiseNewCreds = await('encryptionKey', 'hmacKey', 'cert'); 
+  var promiseNewCreds = await('encryptionKey', 'hmacKey', 'cert');
   var newCreds;
 
   getNewKey(config.encryptionKeyLen, function(err, key) {
@@ -89,7 +89,7 @@ credentialMaker.prototype.getNewCredentials =	function(memberDetails, callback) 
 
   promiseNewCreds.then( function(creds) {
     console.log("New credentials successfully created for sdp member " + memberDetails.sdpid);
-    
+
     var credentials = {
       spa_encryption_key_base64: creds.encryptionKey,
       spa_hmac_key_base64: creds.hmacKey,
@@ -99,7 +99,7 @@ credentialMaker.prototype.getNewCredentials =	function(memberDetails, callback) 
 
     callback(null, credentials);
   },function(err){
-    // oops, there was an error 
+    // oops, there was an error
     console.log(err);
     callback(err, null);
   });
@@ -108,7 +108,7 @@ credentialMaker.prototype.getNewCredentials =	function(memberDetails, callback) 
 
 // Generate a new key for hmac or encryption
 function getNewKey(keyLen, callback) {
-  // this function wants key len in bits, our config 
+  // this function wants key len in bits, our config
   // specified it in bytes, so multiply by 8
   pem.createPrivateKey(keyLen*8, function(err, key) {
     if (err) {
@@ -117,7 +117,7 @@ function getNewKey(keyLen, callback) {
     } else {
         var tempKeyStr = "";
         var finalKey = "";
-        
+
         // get rid of wrapping text and new lines
         var result = key.key.split("\n");
         for (var i = 1; i < (result.length-1); i++) {
@@ -141,7 +141,7 @@ function getNewKey(keyLen, callback) {
         else
         {
           //take from end of buffer because beginning is always rather similar
-          finalKey = tempKeyBuf.toString('base64', tempKeyBuf.length - keyLen); 
+          finalKey = tempKeyBuf.toString('base64', tempKeyBuf.length - keyLen);
         }
 
         callback(null, finalKey);
@@ -163,14 +163,13 @@ function getNewCert(memberDetails, callback) {
     locality: memberDetails.locality,
     organization: memberDetails.org,
     organizationUnit: memberDetails.org_unit,
-    commonName: memberDetails.sdpid.toString(),
-    emailAddress: memberDetails.email
+    commonName: memberDetails.alt_name,
   };
 
   pem.createCertificate(certOptions, function(err, keys){
     if (err) callback(err, null);
     callback(null, keys);
-  }); 
+  });
 }
 
 module.exports = credentialMaker;
